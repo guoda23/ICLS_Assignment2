@@ -1,0 +1,13 @@
+Null Column,Dynamic Column,P-Value
+Vaccination Budget: 1 - Infected,"Vaccination Budget: 1, Testing Accuracy: 0.5 - Infected",9.26e-34
+Vaccination Budget: 1 - Infected,"Vaccination Budget: 1, Testing Accuracy: 0.75 - Infected",1.37e-33
+Vaccination Budget: 1 - Infected,"Vaccination Budget: 1, Testing Accuracy: 1.0 - Infected",5.32e-34
+Vaccination Budget: 3 - Infected,"Vaccination Budget: 3, Testing Accuracy: 0.5 - Infected",4.91e-37
+Vaccination Budget: 3 - Infected,"Vaccination Budget: 3, Testing Accuracy: 0.75 - Infected",8.64e-37
+Vaccination Budget: 3 - Infected,"Vaccination Budget: 3, Testing Accuracy: 1.0 - Infected",1.22e-35
+Vaccination Budget: 5 - Infected,"Vaccination Budget: 5, Testing Accuracy: 0.5 - Infected",2.56e-37
+Vaccination Budget: 5 - Infected,"Vaccination Budget: 5, Testing Accuracy: 0.75 - Infected",1.88e-37
+Vaccination Budget: 5 - Infected,"Vaccination Budget: 5, Testing Accuracy: 1.0 - Infected",1.88e-37
+Vaccination Budget: 10 - Infected,"Vaccination Budget: 10, Testing Accuracy: 0.5 - Infected",2.05e-39
+Vaccination Budget: 10 - Infected,"Vaccination Budget: 10, Testing Accuracy: 0.75 - Infected",2.12e-39
+Vaccination Budget: 10 - Infected,"Vaccination Budget: 10, Testing Accuracy: 1.0 - Infected",7.05e-39
