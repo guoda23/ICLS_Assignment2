@@ -5,20 +5,21 @@
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-# import network_from_pd as FHS_net TODO: replace with your own network import
-
 from dynsimf.models.Model import Model
 from dynsimf.models.Model import ModelConfiguration
 
 from dynsimf.models.components.PropertyFunction import PropertyFunction
 
 class DepressionModel:
+        #TODO: group therapy effect: increase alpha_r_mp
+        #TODO: introduce social buffer effect
+        #TODO: add weighted ties
     
 
     def __init__(self, g, alpha_i_mp=1, alpha_r_mp=1, beta_i_mp=1, beta_r_mp=1, mtp_a_i_individual=np.array([1, 1, 1]), 
                  mtp_a_r_individual=np.array([1, 1, 1]), mtp_b_i_individual=np.array([1, 1, 1, 1]), mtp_b_r_individual=np.array([1, 1, 1]), 
                  flat_ai=0, flat_ar=0, flat_bi=0, flat_br=0, number_of_iterations=200):
-        
+
         self.g = g
         self.model = Model(self.g)
         
@@ -76,44 +77,22 @@ class DepressionModel:
     
     def update_state(self, constants):
         state = self.model.get_state('state')
-        adjacency = self.model.get_adjacency()
+        adjacency = nx.to_numpy_array(self.g, weight='weight')
 
-        # Select different states
         healthy_indices = np.where(state == 0)[0]
-        mild_indices = np.where(state == 1)[0]
+        mild_indices    = np.where(state == 1)[0]
         depressed_indices = np.where(state == 2)[0]
 
-        # Select all neighbours of each state
-        healthy_nbs = adjacency[healthy_indices]
-        mild_nbs = adjacency[mild_indices]
-        depressed_nbs = adjacency[depressed_indices]
-
-        # Get dummy vector for all nodes per state: e.g. n = 6, node 3  and 1 infected: [0,1,0,1,0,0]
-        healthy_vec = np.zeros(len(state))
-        healthy_vec[healthy_indices] = 1
-        mild_vec = np.zeros(len(state))
-        mild_vec[mild_indices] = 1
-        depressed_vec = np.zeros(len(state))
-        depressed_vec[depressed_indices] = 1
-
-        # Get vector of per type ego the adjacency for other type of friends
-            # so if there is 3 healthy ego, who each only have 2 mild friends, it will be
-            # shape (3, n), filled with zeros except 2 ones when healthy_mild
-        healthy_mild = healthy_nbs * mild_vec
-        healthy_depressed = healthy_nbs * depressed_vec
-        mild_healthy = mild_nbs * healthy_vec
-        mild_depressed = mild_nbs * depressed_vec
-        depressed_healthy = depressed_nbs * healthy_vec
-        depressed_mild = depressed_nbs * mild_vec
-
-        # Get number of friends of certain type for each state
-            #  size(n healthy, int)
-        num_h_m = healthy_mild.sum(axis = 1)
-        num_h_d = healthy_depressed.sum(axis = 1)
-        num_m_h = mild_healthy.sum(axis = 1)
-        num_m_d = mild_depressed.sum(axis = 1)
-        num_d_h = depressed_healthy.sum(axis = 1)
-        num_d_m = depressed_mild.sum(axis = 1)
+        healthy_vec   = (state == 0).astype(float)
+        mild_vec      = (state == 1).astype(float)
+        depressed_vec = (state == 2).astype(float)
+    
+        num_h_m = adjacency @ mild_vec        # exposure to Mild
+        num_h_d = adjacency @ depressed_vec   # exposure to Depressed
+        num_m_h = adjacency @ healthy_vec
+        num_m_d = adjacency @ depressed_vec
+        num_d_h = adjacency @ healthy_vec
+        num_d_m = adjacency @ mild_vec
 
         # Get probability to change state:
             # size n healthy, float
@@ -124,21 +103,19 @@ class DepressionModel:
         d_to_h_prob = constants['d_h'][0] + num_d_h * constants['d_h'][1]
         d_to_m_prob = constants['d_m'][0] + num_d_m * constants['d_m'][1]
 
-        # draw uniformly to see who makes transition
-        draw_h_m = np.random.random_sample(len(h_to_m_prob))
-        draw_h_d = np.random.random_sample(len(h_to_d_prob))
-        draw_m_h = np.random.random_sample(len(m_to_h_prob))
-        draw_m_d = np.random.random_sample(len(m_to_d_prob))
-        draw_d_h = np.random.random_sample(len(d_to_h_prob))
-        draw_d_m = np.random.random_sample(len(d_to_m_prob))
+        draw_h_m = np.random.random_sample(len(healthy_indices))
+        draw_h_d = np.random.random_sample(len(healthy_indices))
+        draw_m_h = np.random.random_sample(len(mild_indices))
+        draw_m_d = np.random.random_sample(len(mild_indices))
+        draw_d_h = np.random.random_sample(len(depressed_indices))
+        draw_d_m = np.random.random_sample(len(depressed_indices))
 
-        # Node indicators for changing nodes
-        nodes_h_to_m = healthy_indices[np.where(h_to_m_prob > draw_h_m)]
-        nodes_h_to_d = healthy_indices[np.where(h_to_d_prob > draw_h_d)]
-        nodes_m_to_h = mild_indices[np.where(m_to_h_prob > draw_m_h)]
-        nodes_m_to_d = mild_indices[np.where(m_to_d_prob > draw_m_d)]
-        nodes_d_to_h = depressed_indices[np.where(d_to_h_prob > draw_d_h)]
-        nodes_d_to_m = depressed_indices[np.where(d_to_m_prob > draw_d_m)]
+        nodes_h_to_m = healthy_indices[np.where(h_to_m_prob[healthy_indices] > draw_h_m)]
+        nodes_h_to_d = healthy_indices[np.where(h_to_d_prob[healthy_indices] > draw_h_d)]
+        nodes_m_to_h = mild_indices[np.where(m_to_h_prob[mild_indices] > draw_m_h)]
+        nodes_m_to_d = mild_indices[np.where(m_to_d_prob[mild_indices] > draw_m_d)]
+        nodes_d_to_h = depressed_indices[np.where(d_to_h_prob[depressed_indices] > draw_d_h)]
+        nodes_d_to_m = depressed_indices[np.where(d_to_m_prob[depressed_indices] > draw_d_m)]
 
         # Update new state variable with changed states
         state[nodes_h_to_m] = 1
@@ -149,8 +126,6 @@ class DepressionModel:
         state[nodes_d_to_m] = 1
 
         return {'state': state}
-
-    
 
 
     def get_spatial_correlation(self):
@@ -207,18 +182,3 @@ class DepressionModel:
 
         # Return number of ppl in each state for last iteration
         return np.array((H, M, D))
-
-# %%
-
-# amha_class = AmhaModel(G)
-# %%
-# amha_class.simulate(400)
-#%%
-# cor_dict = amha_class.model.get_properties()
-# val = np.array(cor_dict['correlations'])
-
-# # %%
-# plt.plot(val[:,0])
-# plt.plot(val[:,1])
-# plt.plot(val[:,2])
-# # %%
